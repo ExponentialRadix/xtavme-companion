@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#000000"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>XTAVME Companion</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"/>
+
+<style>
+/* ═══════════════════════════════════════════════════
+   BASE — Liquid Glass dark, iOS 18 spirit
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Paleta */
+  --bg:          #050507;
+  --bg2:         #0a0a0f;
+  --glass:       rgba(255,255,255,0.055);
+  --glass-high:  rgba(255,255,255,0.10);
+  --glass-border:rgba(255,255,255,0.10);
+  --glass-active:rgba(99,102,241,0.18);
+  --indigo:      #6366f1;
+  --indigo-light:#818cf8;
+  --indigo-dim:  rgba(99,102,241,0.15);
+  --emerald:     #34d399;
+  --amber:       #fbbf24;
+  --red:         #f87171;
+  --text-1:      rgba(255,255,255,0.95);
+  --text-2:      rgba(255,255,255,0.55);
+  --text-3:      rgba(255,255,255,0.30);
+  --divider:     rgba(255,255,255,0.07);
+  --blur:        blur(28px) saturate(180%);
+  --blur-heavy:  blur(40px) saturate(200%);
+  --r-card:      18px;
+  --r-pill:      100px;
+  --shadow:      0 4px 32px rgba(0,0,0,0.45);
+  --shadow-sm:   0 2px 12px rgba(0,0,0,0.35);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* Fondo animado — gradiente sutil */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 80%, rgba(52,211,153,0.06) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+}
+
+/* ═══════════════════════════════════════════════════
+   GLASS CARD — componente base
+═══════════════════════════════════════════════════ */
+.glass {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-card);
+}
+.glass-high {
+  background: var(--glass-high);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--r-card);
+}
+
+/* ═══════════════════════════════════════════════════
+   SPA — secciones
+═══════════════════════════════════════════════════ */
+.section { display: none; }
+.section.active {
+  display: block;
+  animation: rise 0.22s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════ */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  background: rgba(5,5,7,0.70);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-bottom: 1px solid var(--divider);
+}
+.header-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 12px rgba(99,102,241,0.4);
+}
+.app-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+.header-actions { display: flex; gap: 4px; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.icon-btn:active { background: var(--glass-active); color: var(--indigo-light); }
+
+/* ═══════════════════════════════════════════════════
+   SECCIÓN CONTENT
+═══════════════════════════════════════════════════ */
+.section-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+/* ═══════════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════════ */
+.card {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-card);
+  padding: 14px 16px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.card-tap {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-tap:active {
+  background: var(--glass-high);
+  border-color: rgba(99,102,241,0.3);
+}
+
+/* Row dentro de card — separador entre items */
+.row-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.row-item:first-child { padding-top: 0; }
+.row-item:last-child  { padding-bottom: 0; border-bottom: none; }
+
+/* ═══════════════════════════════════════════════════
+   INPUTS estilo iOS
+═══════════════════════════════════════════════════ */
+.field-group {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.field-row {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--divider);
+  gap: 10px;
+}
+.field-row:last-child { border-bottom: none; }
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  min-width: 110px;
+}
+.field-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 13px 0;
+  text-align: right;
+}
+.field-input::placeholder { color: var(--text-3); }
+.field-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 13px 14px;
+  resize: none;
+  display: block;
+}
+.field-textarea::placeholder { color: var(--text-3); }
+
+/* Search standalone */
+.search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+  width: 16px; height: 16px;
+}
+.search-input {
+  width: 100%;
+  background: var(--glass-high);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 11px 16px 11px 40px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.search-input:focus {
+  border-color: rgba(99,102,241,0.5);
+  background: rgba(255,255,255,0.09);
+}
+.search-input::placeholder { color: var(--text-3); }
+
+/* ═══════════════════════════════════════════════════
+   BOTÓN PRIMARIO
+═══════════════════════════════════════════════════ */
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+  transition: opacity 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+
+.btn-ghost {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid rgba(99,102,241,0.3);
+  color: var(--indigo-light);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: var(--r-pill);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-ghost:active { background: var(--glass-active); }
+
+/* ═══════════════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════════════ */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.02em;
+}
+.badge-indigo { background: rgba(99,102,241,0.18); color: var(--indigo-light); border: 1px solid rgba(99,102,241,0.3); }
+.badge-green  { background: rgba(52,211,153,0.15); color: var(--emerald);       border: 1px solid rgba(52,211,153,0.3); }
+.badge-amber  { background: rgba(251,191,36,0.12); color: var(--amber);         border: 1px solid rgba(251,191,36,0.25); }
+
+/* ═══════════════════════════════════════════════════
+   SCANNER — visor QR
+═══════════════════════════════════════════════════ */
+.scanner-shell {
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--glass-border);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+#qr-reader { width: 100%; }
+#qr-reader__scan_region { border-radius: 10px; overflow: hidden; }
+#qr-reader__dashboard_section_csr button {
+  background: var(--indigo) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 18px !important;
+  font-family: inherit !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  margin: 8px !important;
+}
+#qr-reader__dashboard_section_fsr { display: none !important; }
+#qr-reader img { display: none !important; }
+#qr-reader__header_message { display: none !important; }
+
+/* ═══════════════════════════════════════════════════
+   BOTTOM NAV — Liquid Glass
+═══════════════════════════════════════════════════ */
+#bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 50;
+  background: rgba(5,5,7,0.75);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-top: 1px solid var(--divider);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 72px;
+  padding: 0 8px 6px;
+  position: relative;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+  padding-bottom: 2px;
+}
+.nav-btn.active { color: var(--indigo-light); }
+.nav-btn span {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+/* Pill indicator */
+.nav-btn.active::before {
+  content: '';
+  display: none; /* usamos el punto debajo del label */
+}
+.nav-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: transparent;
+  margin-top: 1px;
+  transition: background 0.15s;
+}
+.nav-btn.active .nav-dot { background: var(--indigo-light); }
+
+/* FAB central */
+.nav-spacer { flex: 1; max-width: 72px; }
+#scan-fab {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
+  box-shadow: 0 0 0 3px rgba(5,5,7,0.9), 0 8px 28px rgba(99,102,241,0.5);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34,1.3,0.64,1), box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+#scan-fab:active {
+  transform: translateX(-50%) scale(0.9);
+  box-shadow: 0 0 0 3px rgba(5,5,7,0.9), 0 4px 14px rgba(99,102,241,0.4);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(28,28,32,0.92);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  color: var(--text-1);
+  padding: 9px 18px;
+  border-radius: var(--r-pill);
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 200;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════════════════
+   STAT CHIPS — panel de precios
+═══════════════════════════════════════════════════ */
+.price-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.price-chip {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 14px;
+}
+.price-chip-accent {
+  background: rgba(99,102,241,0.1);
+  border-color: rgba(99,102,241,0.25);
+}
+.price-label { font-size: 0.7rem; color: var(--text-2); margin-bottom: 4px; }
+.price-label-accent { font-size: 0.7rem; color: var(--indigo-light); margin-bottom: 4px; }
+.price-value { font-size: 1.35rem; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; }
+.price-value-accent { font-size: 1.35rem; font-weight: 700; color: var(--indigo-light); letter-spacing: -0.02em; }
+
+/* ═══════════════════════════════════════════════════
+   SPINNER
+═══════════════════════════════════════════════════ */
+.spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--indigo-light);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════
+   MISC
+═══════════════════════════════════════════════════ */
+.divider { height: 1px; background: var(--divider); margin: 4px 0; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--text-3);
+  text-align: center;
+  gap: 10px;
+}
+.empty-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.stack { display: flex; flex-direction: column; gap: 8px; }
+
+/* Back button */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--indigo-light);
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px 6px 2px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.back-btn:active { opacity: 0.6; }
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<!-- ══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════ -->
+<header id="header">
+  <div class="header-inner">
+    <div class="app-logo">
+      <div class="logo-icon">
+        <i data-lucide="package" style="width:16px;height:16px;color:#fff"></i>
+      </div>
+      <span class="app-title">XTAVME Companion</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="document.getElementById('json-import').click()" title="Importar JSON">
+        <i data-lucide="upload" style="width:17px;height:17px"></i>
+      </button>
+      <button class="icon-btn" onclick="exportMyData()" title="Exportar apuntes">
+        <i data-lucide="download" style="width:17px;height:17px"></i>
+      </button>
+    </div>
+    <input type="file" id="json-import" accept=".json" style="display:none" onchange="importJSON(event)"/>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN · ESCÁNER
+══════════════════════════════════════════════════ -->
+<section id="section-scanner" class="section active">
+<div class="section-wrap">
+
+  <p class="section-label">Escáner</p>
+
+  <!-- Estado inventario -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--glass-high);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i data-lucide="database" id="inv-icon" style="width:18px;height:18px;color:var(--text-3)"></i>
+      </div>
+      <div style="min-width:0;flex:1">
+        <p style="font-size:.9rem;font-weight:600;color:var(--text-1)" id="inv-status-text">Sin inventario cargado</p>
+        <p style="font-size:.75rem;color:var(--text-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="inv-status-sub">Importa un archivo .json desde el botón superior</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visor QR -->
+  <div class="scanner-shell" id="scanner-shell">
+    <div id="qr-reader" style="width:100%"></div>
+    <div id="scanner-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 24px;text-align:center">
+      <div style="width:64px;height:64px;border-radius:18px;background:var(--indigo-dim);border:1px solid rgba(99,102,241,0.25);display:flex;align-items:center;justify-content:center">
+        <i data-lucide="scan-line" style="width:32px;height:32px;color:var(--indigo-light)"></i>
+      </div>
+      <div>
+        <p style="font-size:.92rem;font-weight:600;color:var(--text-1)">Pulsa el botón central</p>
+        <p style="font-size:.78rem;color:var(--text-3);margin-top:3px">Para activar el escáner de códigos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Búsqueda manual -->
+  <div class="card">
+    <p style="font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">Búsqueda manual</p>
+    <div class="search-wrap" style="margin-bottom:0">
+      <i data-lucide="search" class="search-icon"></i>
+      <input type="text" id="manual-search" placeholder="Código de barras o nombre…"
+             class="search-input" oninput="handleManualSearch(this.value)"
+             autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div id="search-results" style="display:none;margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+  </div>
+
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN · DETALLE
+══════════════════════════════════════════════════ -->
+<section id="section-detail" class="section">
+<div class="section-wrap">
+
+  <button class="back-btn" onclick="goBack()">
+    <i data-lucide="chevron-left" style="width:18px;height:18px"></i>
+    Volver
+  </button>
+
+  <!-- Cabecera producto -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">
+      <div style="min-width:0;flex:1">
+        <p style="font-size:.72rem;font-weight:500;color:var(--text-3);font-variant-numeric:tabular-nums;font-family:monospace;margin-bottom:3px" id="detail-code">—</p>
+        <h2 style="font-size:1.15rem;font-weight:700;color:var(--text-1);line-height:1.25;letter-spacing:-.015em" id="detail-name">—</h2>
+      </div>
+      <span class="badge badge-indigo" id="detail-badge">—</span>
+    </div>
+
+    <div class="price-grid">
+      <div class="price-chip">
+        <p class="price-label">Catálogo</p>
+        <p class="price-value" id="detail-price">—</p>
+      </div>
+      <div class="price-chip price-chip-accent">
+        <p class="price-label-accent">Mi precio</p>
+        <p class="price-value-accent" id="detail-my-price-display">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aviso producto no encontrado -->
+  <div id="create-manual-card" class="card" style="display:none;margin-bottom:12px;border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.07)">
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <i data-lucide="alert-triangle" style="width:18px;height:18px;color:var(--amber);flex-shrink:0;margin-top:1px"></i>
+      <div>
+        <p style="font-size:.88rem;font-weight:600;color:var(--amber)">No está en el inventario</p>
+        <p style="font-size:.76rem;color:var(--text-3);margin-top:3px">Puedes guardar apuntes — se crearán en tu catálogo local.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario apuntes — estilo grouped list iOS -->
+  <p style="font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;padding-left:4px">Mis apuntes</p>
+
+  <div class="field-group" style="margin-bottom:12px">
+    <div class="field-row">
+      <label class="field-label">Mi precio €</label>
+      <input type="number" id="my-price-input" placeholder="0.00" step="0.01" min="0"
+             class="field-input" inputmode="decimal"/>
+    </div>
+    <div class="field-row">
+      <label class="field-label">Stock</label>
+      <input type="number" id="my-stock-input" placeholder="0" min="0"
+             class="field-input" inputmode="numeric"/>
+    </div>
+    <div class="field-row" style="align-items:flex-start;padding-top:10px;padding-bottom:10px">
+      <label class="field-label" style="padding-top:2px">Notas</label>
+      <textarea id="my-notes-input" placeholder="Ubicación, proveedor…"
+                class="field-textarea" rows="2" style="text-align:left"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="saveProductData()">
+    <i data-lucide="save" style="width:17px;height:17px"></i>
+    Guardar apuntes
+  </button>
+
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN · INVENTARIO
+══════════════════════════════════════════════════ -->
+<section id="section-inventory" class="section">
+<div class="section-wrap">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <p class="section-label" style="margin-bottom:0">Inventario</p>
+    <span id="inv-count-badge" class="badge badge-indigo">0 productos</span>
+  </div>
+
+  <div class="search-wrap">
+    <i data-lucide="search" class="search-icon"></i>
+    <input type="text" id="inventory-search" placeholder="Filtrar nombre o código…"
+           class="search-input" oninput="handleInventorySearch(this.value)"
+           autocomplete="off"/>
+  </div>
+
+  <div id="inventory-list" class="stack">
+    <div id="inventory-empty" class="empty-state">
+      <div class="empty-icon">
+        <i data-lucide="package-open" style="width:24px;height:24px;color:var(--text-3)"></i>
+      </div>
+      <p style="font-size:.9rem;font-weight:600">Sin inventario</p>
+      <p style="font-size:.78rem">Importa un JSON desde el botón superior</p>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN · NOTAS
+══════════════════════════════════════════════════ -->
+<section id="section-notes" class="section">
+<div class="section-wrap">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <p class="section-label" style="margin-bottom:0">Notas</p>
+    <button onclick="addQuickNote()"
+            style="display:flex;align-items:center;gap:4px;color:var(--indigo-light);font-size:.8rem;font-weight:600;background:transparent;border:none;cursor:pointer">
+      <i data-lucide="plus" style="width:15px;height:15px"></i>Nueva
+    </button>
+  </div>
+
+  <!-- Productos con apuntes -->
+  <div id="my-data-summary" class="stack" style="margin-bottom:12px"></div>
+
+  <!-- Bloc libre -->
+  <p style="font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;padding-left:4px">Bloc rápido</p>
+  <div class="card">
+    <div id="notes-list" class="stack">
+      <div id="notes-empty" class="empty-state" style="padding:24px">
+        <i data-lucide="sticky-note" style="width:22px;height:22px;color:var(--text-3)"></i>
+        <p style="font-size:.82rem">Sin notas aún</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════════
+     BOTTOM NAV
+══════════════════════════════════════════════════ -->
+<nav id="bottom-nav">
+  <div class="nav-inner">
+
+    <!-- Escáner -->
+    <button class="nav-btn active" id="nav-scanner" onclick="navigateTo('scanner')">
+      <i data-lucide="scan-barcode" style="width:22px;height:22px"></i>
+      <span>Escáner</span>
+      <div class="nav-dot"></div>
+    </button>
+
+    <!-- Spacer para el FAB -->
+    <div class="nav-spacer"></div>
+
+    <!-- FAB central -->
+    <button id="scan-fab" onclick="toggleScanner()">
+      <i data-lucide="scan-line" id="scan-fab-icon" style="width:22px;height:22px"></i>
+    </button>
+
+    <!-- Inventario -->
+    <button class="nav-btn" id="nav-inventory" onclick="navigateTo('inventory')">
+      <i data-lucide="boxes" style="width:22px;height:22px"></i>
+      <span>Inventario</span>
+      <div class="nav-dot"></div>
+    </button>
+
+    <!-- Notas -->
+    <button class="nav-btn" id="nav-notes" onclick="navigateTo('notes')">
+      <i data-lucide="notebook-pen" style="width:22px;height:22px"></i>
+      <span>Notas</span>
+      <div class="nav-dot"></div>
+    </button>
+
+  </div>
+</nav>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ──────────────────────────────────────────────
+   ESTADO GLOBAL
+────────────────────────────────────────────── */
+const State = {
+  inventory:       [],
+  myData:          {},
+  quickNotes:      [],
+  currentProduct:  null,
+  scannerActive:   false,
+  previousSection: 'scanner',
+};
+
+let html5QrScanner = null;
+let searchDebounce = null;
+
+/* ──────────────────────────────────────────────
+   PERSISTENCIA
+────────────────────────────────────────────── */
+const LS = {
+  INVENTORY:   'xtavme_inventory',
+  MY_DATA:     'xtavme_mydata',
+  QUICK_NOTES: 'xtavme_notes',
+  save(k, d)    { try { localStorage.setItem(k, JSON.stringify(d)); } catch(e) {} },
+  load(k, fb=null) {
+    try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; }
+    catch(e) { return fb; }
+  }
+};
+
+/* ──────────────────────────────────────────────
+   INIT
+────────────────────────────────────────────── */
+function init() {
+  State.inventory  = LS.load(LS.INVENTORY,   []);
+  State.myData     = LS.load(LS.MY_DATA,      {});
+  State.quickNotes = LS.load(LS.QUICK_NOTES,  []);
+
+  lucide.createIcons();
+  updateInventoryStatus();
+  renderInventoryList(State.inventory);
+  renderMyDataSummary();
+  renderQuickNotes();
+}
+
+/* ──────────────────────────────────────────────
+   NAVEGACIÓN SPA
+────────────────────────────────────────────── */
+function navigateTo(name) {
+  // Guardar sección previa (no "detail")
+  const cur = document.querySelector('.section.active');
+  if (cur && cur.id !== 'section-detail') {
+    State.previousSection = cur.id.replace('section-', '');
+  }
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  const sec = document.getElementById(`section-${name}`);
+  if (sec) sec.classList.add('active');
+
+  const btn = document.getElementById(`nav-${name}`);
+  if (btn) btn.classList.add('active');
+
+  if (name !== 'scanner' && State.scannerActive) stopScanner();
+
+  setTimeout(() => lucide.createIcons(), 40);
+}
+
+function goBack() {
+  navigateTo(State.previousSection || 'scanner');
+}
+
+/* ──────────────────────────────────────────────
+   ESCÁNER
+────────────────────────────────────────────── */
+async function toggleScanner() {
+  if (State.scannerActive) { stopScanner(); return; }
+  navigateTo('scanner');
+  await startScanner();
+}
+
+async function startScanner() {
+  const ph = document.getElementById('scanner-placeholder');
+
+  /* 1 — soporte API */
+  if (!navigator.mediaDevices?.getUserMedia) {
+    ph.innerHTML = permUI('camera-off', 'Cámara no disponible',
+      'Tu navegador no soporta acceso a cámara. Prueba Chrome en móvil.', false);
+    lucide.createIcons(); return;
+  }
+
+  /* 2 — UI "solicitando permiso" */
+  ph.style.display = 'flex';
+  ph.innerHTML = `
+    <div style="width:64px;height:64px;border-radius:18px;background:var(--indigo-dim);border:1px solid rgba(99,102,241,0.25);display:flex;align-items:center;justify-content:center">
+      <i data-lucide="camera" style="width:30px;height:30px;color:var(--indigo-light)"></i>
+    </div>
+    <div>
+      <p style="font-size:.92rem;font-weight:600;color:var(--text-1)">Permiso de cámara</p>
+      <p style="font-size:.78rem;color:var(--text-3);margin-top:3px">
+        Pulsa <strong style="color:var(--indigo-light)">Permitir</strong> en el diálogo del navegador
+      </p>
+    </div>
+    <div class="spinner"></div>`;
+  lucide.createIcons();
+
+  /* 3 — solicitar permiso explícito */
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' } });
+  } catch(err) {
+    const denied   = ['NotAllowedError','PermissionDeniedError'].includes(err.name);
+    const noDevice = ['NotFoundError','DevicesNotFoundError'].includes(err.name);
+    ph.innerHTML = permUI(
+      denied ? 'shield-x' : noDevice ? 'camera-off' : 'circle-x',
+      denied ? 'Permiso denegado' : noDevice ? 'Sin cámara detectada' : 'Error de cámara',
+      denied ? 'Ve a los ajustes del navegador y permite el acceso a la cámara para esta página.'
+             : noDevice ? 'No se detectó ninguna cámara en este dispositivo.'
+             : 'Intenta recargar la página o usa la búsqueda manual.',
+      true
+    );
+    lucide.createIcons();
+    showToast(denied ? '🚫 Permiso denegado' : '❌ Sin cámara');
+    return;
+  }
+
+  /* 4 — permiso OK → liberar stream y arrancar html5-qrcode */
+  stream.getTracks().forEach(t => t.stop());
+
+  ph.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:32px;color:var(--text-2)">
+    <div class="spinner"></div><span style="font-size:.88rem">Iniciando escáner…</span>
+  </div>`;
+
+  if (!html5QrScanner) html5QrScanner = new Html5Qrcode('qr-reader');
+
+  try {
+    await html5QrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 240, height: 150 }, aspectRatio: 1.6,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+      onScanSuccess,
+      () => {}
+    );
+    State.scannerActive = true;
+    ph.style.display = 'none';
+    updateFab(true);
+    showToast('📷 Escáner activo');
+  } catch(err) {
+    try { await html5QrScanner.clear(); } catch(_) {}
+    html5QrScanner = null;
+    ph.innerHTML = permUI('circle-x', 'Error al iniciar', escapeHtml(err.message||''), true);
+    lucide.createIcons();
+    showToast('❌ Error al iniciar el escáner');
+  }
+}
+
+async function stopScanner() {
+  if (html5QrScanner && State.scannerActive) {
+    try { await html5QrScanner.stop(); } catch(_) {}
+  }
+  State.scannerActive = false;
+  updateFab(false);
+  const ph = document.getElementById('scanner-placeholder');
+  ph.style.display = 'flex';
+  ph.innerHTML = `
+    <div style="width:64px;height:64px;border-radius:18px;background:var(--indigo-dim);border:1px solid rgba(99,102,241,0.25);display:flex;align-items:center;justify-content:center">
+      <i data-lucide="scan-line" style="width:32px;height:32px;color:var(--indigo-light)"></i>
+    </div>
+    <div>
+      <p style="font-size:.92rem;font-weight:600;color:var(--text-1)">Pulsa el botón central</p>
+      <p style="font-size:.78rem;color:var(--text-3);margin-top:3px">Para activar el escáner de códigos</p>
+    </div>`;
+  lucide.createIcons();
+}
+
+function updateFab(on) {
+  const fab  = document.getElementById('scan-fab');
+  const icon = document.getElementById('scan-fab-icon');
+  if (on) {
+    fab.style.background  = 'linear-gradient(135deg,#ef4444,#f87171)';
+    fab.style.boxShadow   = '0 0 0 3px rgba(5,5,7,.9),0 8px 28px rgba(239,68,68,.5)';
+    icon.setAttribute('data-lucide','x');
+  } else {
+    fab.style.background  = 'linear-gradient(135deg,var(--indigo),var(--indigo-light))';
+    fab.style.boxShadow   = '0 0 0 3px rgba(5,5,7,.9),0 8px 28px rgba(99,102,241,.5)';
+    icon.setAttribute('data-lucide','scan-line');
+  }
+  lucide.createIcons();
+}
+
+function permUI(icon, title, body, retry) {
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:36px 24px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:16px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);display:flex;align-items:center;justify-content:center">
+        <i data-lucide="${icon}" style="width:26px;height:26px;color:var(--red)"></i>
+      </div>
+      <div>
+        <p style="font-size:.92rem;font-weight:700;color:var(--text-1)">${title}</p>
+        <p style="font-size:.78rem;color:var(--text-3);margin-top:5px;line-height:1.5">${body}</p>
+      </div>
+      ${retry ? `<button class="btn-ghost" onclick="startScanner()">Reintentar</button>` : ''}
+    </div>`;
+}
+
+function onScanSuccess(text) {
+  if (navigator.vibrate) navigator.vibrate(60);
+  stopScanner();
+  openProductDetail(text.trim(), 'scan');
+}
+
+/* ──────────────────────────────────────────────
+   DETALLE
+────────────────────────────────────────────── */
+function openProductDetail(code, source='search') {
+  const product = findProduct(code);
+  State.currentProduct = product || { barcode: code, name: '', price: null };
+  if (source !== 'detail') {
+    State.previousSection = source === 'scan' ? 'scanner' : source === 'notes' ? 'notes' : 'inventory';
+  }
+
+  const saved = State.myData[code] || {};
+
+  document.getElementById('detail-code').textContent = code;
+  document.getElementById('detail-name').textContent = product?.name || 'Producto desconocido';
+
+  const priceEl = document.getElementById('detail-price');
+  priceEl.textContent = product?.price != null ? formatCurrency(product.price) : '—';
+
+  document.getElementById('detail-my-price-display').textContent =
+    saved.myPrice != null ? formatCurrency(saved.myPrice) : '—';
+
+  const badge = document.getElementById('detail-badge');
+  if (product) {
+    badge.textContent = source === 'scan' ? 'Escaneado' : 'Encontrado';
+    badge.className   = 'badge ' + (source === 'scan' ? 'badge-indigo' : 'badge-green');
+  } else {
+    badge.textContent = 'Manual';
+    badge.className   = 'badge badge-amber';
+  }
+
+  document.getElementById('create-manual-card').style.display = product ? 'none' : 'block';
+  document.getElementById('my-price-input').value = saved.myPrice != null ? saved.myPrice : '';
+  document.getElementById('my-notes-input').value = saved.notes  || '';
+  document.getElementById('my-stock-input').value = saved.stock  != null ? saved.stock  : '';
+
+  navigateTo('detail');
+}
+
+function findProduct(code) {
+  return State.inventory.find(p =>
+    String(p.barcode||p.code||p.ean||p.id||p.sku||p.ref||'').trim() === code
+  ) || State.inventory.find(p =>
+    String(p.code||p.ean||p.sku||'').trim() === code
+  ) || null;
+}
+
+/* ──────────────────────────────────────────────
+   GUARDAR
+────────────────────────────────────────────── */
+function saveProductData() {
+  const code = State.currentProduct?.barcode
+            || document.getElementById('detail-code').textContent;
+  if (!code || code === '—') { showToast('⚠️ Sin producto activo'); return; }
+
+  const myPriceRaw = document.getElementById('my-price-input').value;
+  const myPrice    = myPriceRaw !== '' ? parseFloat(myPriceRaw) : null;
+  const notes      = document.getElementById('my-notes-input').value.trim();
+  const stockRaw   = document.getElementById('my-stock-input').value;
+  const stock      = stockRaw !== '' ? parseInt(stockRaw, 10) : null;
+
+  State.myData[code] = {
+    ...(State.myData[code]||{}),
+    barcode: code,
+    name: State.currentProduct?.name || document.getElementById('detail-name').textContent,
+    myPrice, notes, stock,
+    updatedAt: new Date().toISOString(),
+  };
+
+  LS.save(LS.MY_DATA, State.myData);
+  document.getElementById('detail-my-price-display').textContent =
+    myPrice != null ? formatCurrency(myPrice) : '—';
+  renderMyDataSummary();
+  showToast('✅ Guardado');
+}
+
+/* ──────────────────────────────────────────────
+   IMPORTAR JSON
+────────────────────────────────────────────── */
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      let products = Array.isArray(parsed) ? parsed
+        : parsed.products||parsed.inventory||parsed.items
+        || Object.values(parsed).find(v=>Array.isArray(v)) || [];
+
+      if (!products.length) { showToast('⚠️ Sin productos reconocibles'); return; }
+
+      State.inventory = products.map(p => ({
+        barcode:  String(p.barcode||p.code||p.ean||p.id||p.sku||p.ref||'').trim(),
+        name:     String(p.name||p.nombre||p.description||p.descripcion||'').trim(),
+        price:    p.price??p.precio??p.pvp ?? null,
+        category: p.category||p.categoria||'',
+        brand:    p.brand||p.marca||'',
+        raw: p,
+      }));
+
+      LS.save(LS.INVENTORY, State.inventory);
+      updateInventoryStatus();
+      renderInventoryList(State.inventory);
+      showToast(`✅ ${State.inventory.length} productos importados`);
+    } catch(err) { showToast('❌ JSON inválido'); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ──────────────────────────────────────────────
+   EXPORTAR
+────────────────────────────────────────────── */
+function exportMyData() {
+  const data = { exportedAt: new Date().toISOString(), version:'1.0',
+                 myData: State.myData, quickNotes: State.quickNotes };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = Object.assign(document.createElement('a'),
+    {href:URL.createObjectURL(blob), download:`xtavme-${new Date().toISOString().slice(0,10)}.json`});
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('📥 Exportado');
+}
+
+/* ──────────────────────────────────────────────
+   BÚSQUEDA — escáner
+────────────────────────────────────────────── */
+function handleManualSearch(value) {
+  clearTimeout(searchDebounce);
+  const box = document.getElementById('search-results');
+  if (!value.trim()) { box.style.display='none'; box.innerHTML=''; return; }
+
+  searchDebounce = setTimeout(() => {
+    const q = value.trim().toLowerCase();
+    const res = State.inventory.filter(p =>
+      p.barcode.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+    ).slice(0,12);
+
+    box.style.display = 'flex';
+    if (!res.length) {
+      box.innerHTML = `<div style="text-align:center;padding:12px 0;font-size:.84rem;color:var(--text-3)">
+        Sin coincidencias —
+        <button onclick="openProductDetail('${escapeAttr(value.trim())}','search')"
+                style="color:var(--indigo-light);background:none;border:none;cursor:pointer;font-size:.84rem;font-weight:600">crear entrada manual</button>
+      </div>`;
+      return;
+    }
+
+    box.innerHTML = res.map(p => `
+      <button onclick="openProductDetail('${escapeAttr(p.barcode)}','search')"
+              class="card card-tap" style="display:flex;align-items:center;gap:12px;text-align:left;width:100%">
+        <div style="min-width:0;flex:1">
+          <p style="font-size:.88rem;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.name)||'(sin nombre)'}</p>
+          <p style="font-size:.72rem;color:var(--text-3);font-family:monospace;margin-top:2px">${escapeHtml(p.barcode)}</p>
+        </div>
+        ${p.price!=null?`<span style="font-size:.9rem;font-weight:700;color:var(--indigo-light);flex-shrink:0">${formatCurrency(p.price)}</span>`:''}
+      </button>`).join('');
+  }, 250);
+}
+
+/* ──────────────────────────────────────────────
+   BÚSQUEDA — inventario
+────────────────────────────────────────────── */
+function handleInventorySearch(value) {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    if (!value.trim()) { renderInventoryList(State.inventory); return; }
+    const q = value.trim().toLowerCase();
+    renderInventoryList(State.inventory.filter(p =>
+      p.barcode.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      (p.brand||'').toLowerCase().includes(q)
+    ));
+  }, 250);
+}
+
+/* ──────────────────────────────────────────────
+   RENDER inventario
+────────────────────────────────────────────── */
+function renderInventoryList(products) {
+  const list  = document.getElementById('inventory-list');
+  const empty = document.getElementById('inventory-empty');
+  const badge = document.getElementById('inv-count-badge');
+
+  badge.textContent = `${products.length} producto${products.length!==1?'s':''}`;
+  list.querySelectorAll('.inv-item').forEach(el=>el.remove());
+
+  if (!products.length) { empty.style.display='flex'; return; }
+  empty.style.display = 'none';
+
+  const frag = document.createDocumentFragment();
+  products.forEach(p => {
+    const saved = State.myData[p.barcode];
+    const hasData = saved && (saved.myPrice!=null||saved.notes||saved.stock!=null);
+    const btn = document.createElement('button');
+    btn.className = 'inv-item card card-tap';
+    btn.style.cssText = 'display:flex;align-items:center;gap:12px;text-align:left;width:100%';
+    btn.onclick = () => openProductDetail(p.barcode,'inventory');
+    btn.innerHTML = `
+      <div style="min-width:0;flex:1">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <p style="font-size:.9rem;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.name)||'(sin nombre)'}</p>
+          ${hasData?`<span style="width:6px;height:6px;border-radius:50%;background:var(--indigo-light);flex-shrink:0"></span>`:''}
+        </div>
+        <p style="font-size:.72rem;color:var(--text-3);font-family:monospace">${escapeHtml(p.barcode)}</p>
+        ${p.brand?`<p style="font-size:.72rem;color:var(--text-3);margin-top:1px">${escapeHtml(p.brand)}</p>`:''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${p.price!=null?`<p style="font-size:.9rem;font-weight:700;color:var(--indigo-light)">${formatCurrency(p.price)}</p>`:''}
+        ${saved?.myPrice!=null?`<p style="font-size:.72rem;color:var(--emerald);margin-top:2px">Mío: ${formatCurrency(saved.myPrice)}</p>`:''}
+      </div>`;
+    frag.appendChild(btn);
+  });
+  list.appendChild(frag);
+}
+
+/* ──────────────────────────────────────────────
+   RENDER notas / apuntes
+────────────────────────────────────────────── */
+function renderMyDataSummary() {
+  const container = document.getElementById('my-data-summary');
+  const entries   = Object.values(State.myData);
+  if (!entries.length) { container.innerHTML=''; return; }
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px">
+      <p style="font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)">Productos con apuntes</p>
+      <span class="badge badge-indigo">${entries.length}</span>
+    </div>
+    ${entries.map(e=>`
+      <button onclick="openProductDetail('${escapeAttr(e.barcode)}','notes')"
+              class="card card-tap" style="display:flex;align-items:center;gap:12px;text-align:left;width:100%">
+        <div style="min-width:0;flex:1">
+          <p style="font-size:.88rem;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.name)||e.barcode}</p>
+          <p style="font-size:.72rem;color:var(--text-3);font-family:monospace;margin-top:1px">${escapeHtml(e.barcode)}</p>
+          ${e.notes?`<p style="font-size:.75rem;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.notes)}</p>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${e.myPrice!=null?`<p style="font-size:.9rem;font-weight:700;color:var(--emerald)">${formatCurrency(e.myPrice)}</p>`:''}
+          ${e.stock!=null?`<p style="font-size:.72rem;color:var(--text-3);margin-top:2px">Stock ${e.stock}</p>`:''}
+        </div>
+      </button>`).join('')}`;
+  lucide.createIcons();
+}
+
+function addQuickNote() {
+  const text = prompt('Nueva nota:');
+  if (!text?.trim()) return;
+  State.quickNotes.unshift({ id: Date.now(), text: text.trim(), ts: new Date().toISOString() });
+  LS.save(LS.QUICK_NOTES, State.quickNotes);
+  renderQuickNotes();
+  showToast('📝 Nota añadida');
+}
+
+function deleteQuickNote(id) {
+  State.quickNotes = State.quickNotes.filter(n=>n.id!==id);
+  LS.save(LS.QUICK_NOTES, State.quickNotes);
+  renderQuickNotes();
+}
+
+function renderQuickNotes() {
+  const list  = document.getElementById('notes-list');
+  const empty = document.getElementById('notes-empty');
+  list.querySelectorAll('.note-item').forEach(el=>el.remove());
+  if (!State.quickNotes.length) { empty.style.display='flex'; return; }
+  empty.style.display = 'none';
+  const frag = document.createDocumentFragment();
+  State.quickNotes.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'note-item';
+    div.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider)';
+    div.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <p style="font-size:.88rem;color:var(--text-1);line-height:1.4">${escapeHtml(n.text)}</p>
+        <p style="font-size:.72rem;color:var(--text-3);margin-top:3px">${formatDate(n.ts)}</p>
+      </div>
+      <button onclick="deleteQuickNote(${n.id})"
+              style="color:var(--text-3);background:transparent;border:none;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s"
+              onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text-3)'">
+        <i data-lucide="trash-2" style="width:15px;height:15px"></i>
+      </button>`;
+    frag.appendChild(div);
+  });
+  list.appendChild(frag);
+  lucide.createIcons();
+}
+
+/* ──────────────────────────────────────────────
+   ESTADO INVENTARIO — header card
+────────────────────────────────────────────── */
+function updateInventoryStatus() {
+  const t = document.getElementById('inv-status-text');
+  const s = document.getElementById('inv-status-sub');
+  const i = document.getElementById('inv-icon');
+  if (State.inventory.length) {
+    t.textContent = `${State.inventory.length} productos cargados`;
+    s.textContent = 'Inventario listo — escanea o busca';
+    i.setAttribute('data-lucide','check-circle-2');
+    i.style.color = 'var(--emerald)';
+  } else {
+    t.textContent = 'Sin inventario cargado';
+    s.textContent = 'Importa un archivo .json desde el botón superior';
+    i.setAttribute('data-lucide','database');
+    i.style.color = 'var(--text-3)';
+  }
+  lucide.createIcons();
+}
+
+/* ──────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg, ms=2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ──────────────────────────────────────────────
+   UTILS
+────────────────────────────────────────────── */
+function formatCurrency(v) {
+  if (v==null) return '—';
+  return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(v);
+}
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+}
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escapeAttr(s) {
+  if (!s) return '';
+  return String(s).replace(/'/g,"\\'");
+}
+
+/* ──────────────────────────────────────────────
+   ARRANQUE
+────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
