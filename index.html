@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Impresor de Etiquetas TPV</title>
+
+<!-- @page no admite var(): este bloque se reescribe desde JS con las medidas reales -->
+<style id="pageStyle">@page { size: 80mm 30mm; margin: 0; }</style>
+
+<style>
+  :root {
+    --lw: 80;            /* ancho de etiqueta (mm, sin unidad) */
+    --lh: 30;            /* alto de etiqueta (mm, sin unidad) */
+    --gx: 3%;            /* guía de margen seguro */
+    --gy: 8%;
+
+    --bg: #f2f4f8;
+    --card: #ffffff;
+    --surface: #eef1f6;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --accent: #2563eb;
+    --accent-ink: #ffffff;
+    --accent-soft: rgba(37, 99, 235, .12);
+    --dot: #cbd5e1;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px -8px rgba(15, 23, 42, .12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1020;
+      --card: #151b2e;
+      --surface: #1d2540;
+      --ink: #e8ecf5;
+      --muted: #94a3b8;
+      --line: #263052;
+      --accent: #6c9bff;
+      --accent-ink: #0b1020;
+      --accent-soft: rgba(108, 155, 255, .18);
+      --dot: #2a3558;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -8px rgba(0, 0, 0, .6);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.4;
+    min-height: 100vh;
+  }
+
+  .app { max-width: 1040px; margin: 0 auto; padding: 24px 20px 40px; }
+
+  /* ---------- Cabecera ---------- */
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--accent-soft); color: var(--accent);
+    display: grid; place-items: center; flex: none;
+  }
+  .topbar h1 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+  .topbar p  { font-size: 13px; color: var(--muted); }
+
+  svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- Layout ---------- */
+  .layout { display: grid; grid-template-columns: minmax(320px, 380px) 1fr; gap: 20px; align-items: start; }
+  .card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 20px; }
+  .preview { position: sticky; top: 20px; }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .preview { position: static; order: -1; }
+    .app { padding: 16px 14px 32px; }
+  }
+
+  /* ---------- Controles ---------- */
+  .controls { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field > label, .field > .lbl {
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  input[type="number"], textarea {
+    width: 100%; font: inherit; color: var(--ink);
+    background: var(--surface); border: 2px solid transparent; border-radius: 12px;
+    padding: 11px 14px; outline: none; transition: border-color .15s, background .15s;
+  }
+  textarea { resize: vertical; min-height: 84px; font-size: 17px; font-weight: 600; line-height: 1.35; }
+  input[type="number"]:focus, textarea:focus { border-color: var(--accent); background: var(--card); }
+  small.help { font-size: 12.5px; color: var(--muted); }
+
+  /* Control segmentado (plantillas y fuente) */
+  .seg {
+    position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    gap: 2px; padding: 3px; background: var(--surface); border-radius: 14px;
+  }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    padding: 9px 4px; border-radius: 11px; cursor: pointer; text-align: center;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    transition: background .15s, color .15s, box-shadow .15s;
+    user-select: none;
+  }
+  .seg label small { font-size: 11px; font-weight: 500; opacity: .85; }
+  .seg input:checked + label { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(15, 23, 42, .18); }
+  .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Stepper de copias */
+  .stepper { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; }
+  .stepper button {
+    background: var(--surface); color: var(--ink); border: 0; border-radius: 12px;
+    font-size: 20px; font-weight: 600; cursor: pointer; transition: background .15s;
+  }
+  .stepper button:hover { background: var(--accent-soft); }
+  .stepper input { text-align: center; font-weight: 700; -moz-appearance: textfield; appearance: textfield; }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* Interruptor */
+  .switch { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; font-weight: 500; }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch .track {
+    width: 44px; height: 26px; border-radius: 999px; background: var(--surface);
+    position: relative; flex: none; transition: background .2s;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--muted); transition: transform .2s, background .2s;
+  }
+  .switch input:checked + .track { background: var(--accent); box-shadow: none; }
+  .switch input:checked + .track::after { transform: translateX(18px); background: var(--accent-ink); }
+  .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Botón principal */
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 15px; border: 0; border-radius: 14px;
+    background: var(--accent); color: var(--accent-ink);
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: transform .08s, filter .15s, opacity .15s;
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-primary:active { transform: scale(.985); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; filter: none; transform: none; }
+  .hint { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: -6px; }
+
+  /* ---------- Vista previa ---------- */
+  .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .preview-head h2 { font-size: 15px; font-weight: 700; }
+  .badge {
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+  .guides-toggle { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); cursor: pointer; user-select: none; }
+  .guides-toggle input { accent-color: var(--accent); }
+
+  .stage {
+    display: grid; place-items: center; padding: 32px 18px; border-radius: 16px;
+    background-color: var(--surface);
+    background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+    background-size: 16px 16px;
+    min-height: 200px;
+  }
+
+  /* La etiqueta en pantalla mantiene la proporción real y escala con el ancho disponible */
+  .label {
+    position: relative; width: 100%;
+    max-width: min(100%, calc(var(--lw) * 8px));
+    aspect-ratio: var(--lw) / var(--lh);
+    background: #fff; border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .18), 0 14px 32px -10px rgba(0, 0, 0, .35);
+  }
+  .label .svgwrap { position: absolute; inset: 0; }
+  .label .svgwrap svg { width: 100%; height: 100%; display: block; }
+  .label .guide {
+    position: absolute; inset: var(--gy) var(--gx);
+    border: 1px dashed rgba(37, 99, 235, .5); border-radius: 2px; pointer-events: none;
+  }
+  .stage.noguides .guide { display: none; }
+  .label.empty::after {
+    content: "Escribe un texto…"; position: absolute; inset: 0; display: grid; place-items: center;
+    color: #94a3b8; font-weight: 500; font-size: 15px;
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .stat { background: var(--surface); border-radius: 12px; padding: 10px 12px; }
+  .stat span { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .stat b { font-size: 17px; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Impresión ---------- */
+  #printArea { display: none; }
+
+  @media print {
+    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; height: auto !important; }
+    .app { display: none !important; }
+    #printArea { display: block; }
+    .print-label {
+      background: #fff; overflow: hidden;
+      break-after: page; page-break-after: always;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .print-label:last-child { break-after: auto; page-break-after: auto; }
+    .print-label svg { display: block; width: 100%; height: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="logo">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    </div>
+    <div>
+      <h1>Etiquetas TPV</h1>
+      <p>Impresión local de baldas</p>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- ============ CONTROLES ============ -->
+    <section class="card controls">
+
+      <div class="field">
+        <span class="lbl">Plantilla</span>
+        <div class="seg" role="radiogroup" aria-label="Plantilla">
+          <input type="radio" name="tpl" id="tpl1" value="80x30" checked>
+          <label for="tpl1"><span>80 × 30</span><small>Balda 3 cm</small></label>
+          <input type="radio" name="tpl" id="tpl2" value="58x30">
+          <label for="tpl2"><span>58 × 30</span><small>Compacta</small></label>
+          <input type="radio" name="tpl" id="tpl3" value="80x50">
+          <label for="tpl3"><span>80 × 50</span><small>Balda 5 cm</small></label>
+          <input type="radio" name="tpl" id="tpl4" value="custom">
+          <label for="tpl4"><span>Otra</span><small>Medida libre</small></label>
+        </div>
+      </div>
+
+      <div class="row" id="customSize" hidden>
+        <div class="field">
+          <label for="customW">Ancho (mm)</label>
+          <input type="number" id="customW" min="20" max="200" value="80" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="customH">Alto (mm)</label>
+          <input type="number" id="customH" min="10" max="200" value="30" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="labelText">Texto</label>
+        <textarea id="labelText" maxlength="120" placeholder="Nombre del producto…">Campus lamela 4mm</textarea>
+        <small class="help">Se ajusta solo al tamaño de la etiqueta. Pulsa Intro para forzar un salto de línea.</small>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Fuente</span>
+        <div class="seg" role="radiogroup" aria-label="Fuente">
+          <input type="radio" name="font" id="f1" value="black" checked>
+          <label for="f1" style="font-family:'Arial Black',Arial,sans-serif;font-weight:900">Black</label>
+          <input type="radio" name="font" id="f2" value="impact">
+          <label for="f2" style="font-family:Impact,'Arial Narrow',sans-serif;font-weight:400">Impact</label>
+          <input type="radio" name="font" id="f3" value="arial">
+          <label for="f3" style="font-family:Arial,Helvetica,sans-serif;font-weight:700">Arial</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="copies">Copias</label>
+        <div class="stepper">
+          <button type="button" id="cMinus" aria-label="Menos copias">−</button>
+          <input type="number" id="copies" min="1" max="200" value="1" inputmode="numeric">
+          <button type="button" id="cPlus" aria-label="Más copias">+</button>
+        </div>
+      </div>
+
+      <label class="switch">
+        <input type="checkbox" id="upper">
+        <span class="track"></span>
+        <span>Todo en mayúsculas</span>
+      </label>
+
+      <button type="button" class="btn-primary" id="printBtn">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span id="printLabel">Imprimir etiqueta</span>
+      </button>
+      <p class="hint">En el diálogo: márgenes «Ninguno» y escala 100 %. <br>Atajo: Ctrl + Intro.</p>
+    </section>
+
+    <!-- ============ VISTA PREVIA ============ -->
+    <section class="card preview" aria-live="polite">
+      <div class="preview-head">
+        <h2>Vista previa</h2>
+        <span class="badge" id="sizeInfo">80 × 30 mm</span>
+        <label class="guides-toggle"><input type="checkbox" id="guides" checked> Guías</label>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="label" id="label">
+          <div class="svgwrap" id="svgWrap"></div>
+          <div class="guide"></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span>Líneas</span><b id="statLines">1</b></div>
+        <div class="stat"><span>Letra</span><b id="statPt">—</b></div>
+        <div class="stat"><span>Hojas</span><b id="statCopies">1</b></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Zona que realmente se imprime: se rellena justo antes de imprimir -->
+<div id="printArea" aria-hidden="true"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+  const root = document.documentElement;
+
+  const el = {
+    customBox: $('customSize'), customW: $('customW'), customH: $('customH'),
+    text: $('labelText'), upper: $('upper'), copies: $('copies'),
+    label: $('label'), svgWrap: $('svgWrap'), stage: $('stage'), guides: $('guides'),
+    size: $('sizeInfo'), lines: $('statLines'), pt: $('statPt'), sheets: $('statCopies'),
+    printBtn: $('printBtn'), printLabel: $('printLabel'),
+    printArea: $('printArea'), pageStyle: $('pageStyle')
+  };
+
+  // Comillas simples en las familias: se usan tanto en atributos SVG como en canvas
+  const FONTS = {
+    black:  { css: "'Arial Black', 'Arial Bold', Arial, sans-serif", weight: 900 },
+    impact: { css: "Impact, 'Arial Narrow', 'Arial Black', sans-serif", weight: 400 },
+    arial:  { css: "Arial, Helvetica, sans-serif", weight: 700 }
+  };
+
+  const PAD = 25;        // margen seguro: 2,5 mm (el viewBox usa 1 mm = 10 unidades)
+  const LINE_H = 1.08;   // interlineado
+  const KEY = 'tpv-etiquetas-v2';
+
+  let markup = '';       // SVG actual (se reutiliza para imprimir)
+  let hasText = false;
+
+  /* ---------- Lectura de controles ---------- */
+  const checked = name => document.querySelector(`input[name="${name}"]:checked`).value;
+
+  function currentSize() {
+    let w, h;
+    const tpl = checked('tpl');
+    if (tpl === 'custom') { w = Number(el.customW.value); h = Number(el.customH.value); }
+    else { [w, h] = tpl.split('x').map(Number); }
+    return {
+      w: clamp(Math.round(w) || 80, 20, 200),
+      h: clamp(Math.round(h) || 30, 10, 200)
+    };
+  }
+
+  const copiesN = () => clamp(Math.round(Number(el.copies.value)) || 1, 1, 200);
+
+  /* ---------- Medición y ajuste automático del texto ---------- */
+  const ctx = document.createElement('canvas').getContext('2d');
+  const measure = s => ctx.measureText(s).width;   // ancho a 100 px de cuerpo
+
+  function wrapGreedy(words, widths, space, maxW) {
+    const lines = [];
+    let cur = '', curW = 0;
+    words.forEach((word, i) => {
+      if (!cur) { cur = word; curW = widths[i]; }
+      else if (curW + space + widths[i] <= maxW) { cur += ' ' + word; curW += space + widths[i]; }
+      else { lines.push(cur); cur = word; curW = widths[i]; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  // Devuelve las líneas y el tamaño de letra más grande que cabe en el área disponible
+  function layout(text, font, availW, availH) {
+    ctx.font = `${font.weight} 100px ${font.css}`;
+
+    const evaluate = lines => {
+      const maxLine = Math.max(...lines.map(measure));
+      const fs = Math.min(availW / maxLine * 100, availH / (lines.length * LINE_H));
+      return { lines, fs };
+    };
+
+    const rows = text.split('\n').map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    if (!rows.length) return null;
+
+    // Saltos manuales: se respetan tal cual
+    if (rows.length > 1) return evaluate(rows);
+
+    // Una sola línea: probamos a repartirla en 1..4 líneas y nos quedamos con la que permita letra mayor
+    const words = rows[0].split(' ');
+    const widths = words.map(measure);
+    const space = measure(' ');
+    const minW = Math.max(...widths);
+    const total = widths.reduce((a, b) => a + b, 0) + space * (words.length - 1) + 1;
+
+    let best = null;
+    for (let n = 1; n <= Math.min(4, words.length); n++) {
+      let lo = minW, hi = total;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        if (wrapGreedy(words, widths, space, mid).length <= n) hi = mid; else lo = mid;
+      }
+      const cand = evaluate(wrapGreedy(words, widths, space, hi));
+      if (!best || cand.fs > best.fs * 1.04) best = cand;   // a igualdad, preferimos menos líneas
+    }
+    return best;
+  }
+
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function svgMarkup(res, font, W, H) {
+    let inner = '';
+    if (res) {
+      const n = res.lines.length, lh = res.fs * LINE_H;
+      const y0 = H / 2 - (n - 1) * lh / 2;
+      inner = res.lines.map((t, i) =>
+        `<text x="${W / 2}" y="${(y0 + i * lh).toFixed(1)}" font-size="${res.fs.toFixed(1)}" ` +
+        `font-family="${font.css}" font-weight="${font.weight}" fill="#000" ` +
+        `text-anchor="middle" dominant-baseline="central" text-rendering="geometricPrecision">${esc(t)}</text>`
+      ).join('');
+    }
+    // OJO: el viewBox necesita espacios entre los cuatro números ("0 0 800 300")
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Etiqueta">${inner}</svg>`;
+  }
+
+  /* ---------- Render ---------- */
+  function render() {
+    const { w, h } = currentSize();
+    const W = w * 10, H = h * 10;
+
+    root.style.setProperty('--lw', w);
+    root.style.setProperty('--lh', h);
+    root.style.setProperty('--gx', (PAD / W * 100).toFixed(2) + '%');
+    root.style.setProperty('--gy', (PAD / H * 100).toFixed(2) + '%');
+    el.pageStyle.textContent = `@page { size: ${w}mm ${h}mm; margin: 0; }`;
+    el.size.textContent = `${w} × ${h} mm`;
+    el.customBox.hidden = checked('tpl') !== 'custom';
+
+    const font = FONTS[checked('font')] || FONTS.black;
+    let text = el.text.value.replace(/\r/g, '');
+    if (el.upper.checked) text = text.toLocaleUpperCase('es');
+
+    const res = layout(text, font, W - 2 * PAD, H - 2 * PAD);
+    hasText = !!res;
+    markup = svgMarkup(res, font, W, H);
+    el.svgWrap.innerHTML = markup;
+
+    el.label.classList.toggle('empty', !res);
+    el.stage.classList.toggle('noguides', !el.guides.checked);
+    el.printBtn.disabled = !res;
+
+    const n = copiesN();
+    el.lines.textContent = res ? res.lines.length : '—';
+    el.pt.textContent = res ? '≈ ' + Math.round(res.fs / 10 * 2.8346) + ' pt' : '—';
+    el.sheets.textContent = n;
+    el.printLabel.textContent = n > 1 ? `Imprimir ${n} etiquetas` : 'Imprimir etiqueta';
+
+    save();
+  }
+
+  /* ---------- Impresión ---------- */
+  function preparePrint() {
+    if (!hasText) { el.printArea.innerHTML = ''; return; }
+    const { w, h } = currentSize();
+    // 0,3 mm menos de alto evita la hoja en blanco final por redondeos del navegador
+    const one = `<div class="print-label" style="width:${w}mm;height:${(h - 0.3).toFixed(1)}mm">${markup}</div>`;
+    el.printArea.innerHTML = one.repeat(copiesN());
+  }
+
+  function doPrint() {
+    if (!hasText) return;
+    preparePrint();
+    window.print();
+  }
+
+  window.addEventListener('beforeprint', preparePrint);   // también cubre Ctrl+P
+  window.addEventListener('afterprint', () => { el.printArea.innerHTML = ''; });
+
+  /* ---------- Persistencia local ---------- */
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        tpl: checked('tpl'), font: checked('font'),
+        w: el.customW.value, h: el.customH.value,
+        text: el.text.value, upper: el.upper.checked,
+        copies: el.copies.value, guides: el.guides.checked
+      }));
+    } catch (e) { /* almacenamiento no disponible: se ignora */ }
+  }
+
+  function restore() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    if (!s) return;
+    const pick = (name, v) => { const r = document.querySelector(`input[name="${name}"][value="${v}"]`); if (r) r.checked = true; };
+    if (s.tpl) pick('tpl', s.tpl);
+    if (s.font) pick('font', s.font);
+    if (s.w) el.customW.value = s.w;
+    if (s.h) el.customH.value = s.h;
+    if (typeof s.text === 'string') el.text.value = s.text;
+    el.upper.checked = !!s.upper;
+    if (s.copies) el.copies.value = s.copies;
+    el.guides.checked = s.guides !== false;
+  }
+
+  /* ---------- Eventos ---------- */
+  document.addEventListener('input', render);
+
+  $('cMinus').addEventListener('click', () => { el.copies.value = clamp(copiesN() - 1, 1, 200); render(); });
+  $('cPlus').addEventListener('click',  () => { el.copies.value = clamp(copiesN() + 1, 1, 200); render(); });
+
+  el.printBtn.addEventListener('click', doPrint);
+  el.text.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doPrint(); }
+  });
+
+  restore();
+  render();
+})();
+</script>
+</body>
+</html>
